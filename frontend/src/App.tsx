@@ -4,7 +4,6 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Tickets } from './pages/Tickets';
 import { Transactions } from './pages/Transactions';
-import { Approvals } from './pages/Approvals';
 import { AuditLogs } from './pages/AuditLogs';
 import { FraudDetection } from './pages/FraudDetection';
 import { PaymentAgent } from './pages/PaymentAgent';
@@ -45,7 +44,6 @@ function App() {
           <Route path="tickets" element={<Tickets />} />
           <Route path="payment-agent" element={<PaymentAgent />} />
           <Route path="fraud" element={<FraudDetection />} />
-          <Route path="approvals" element={<Approvals />} />
           <Route path="audit" element={<AuditLogs />} />
           <Route path="agents" element={<AIAgents />} />
           <Route path="*" element={<NotFound />} />

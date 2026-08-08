@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, ShieldCheck, Activity, BrainCircuit } from 'lucide-react';
+import { Search, Filter, ShieldCheck, Activity, Bot } from 'lucide-react';
 import { apiClient } from '@/api/client';
 
 export function AuditLogs() {
@@ -64,8 +64,10 @@ export function AuditLogs() {
                 logs?.map((log: any) => (
                   <tr key={log.id} className="hover:bg-muted/50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4 font-medium text-foreground">{new Date(log.created_at).toLocaleString()}</td>
-                    <td className="whitespace-nowrap px-6 py-4 font-semibold text-foreground flex items-center gap-2">
-                      <BrainCircuit className="h-4 w-4 text-primary" /> {log.agent}
+                    <td className="whitespace-nowrap px-6 py-4 font-semibold text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Bot className="h-4 w-4 text-primary" /> {log.agent}
+                      </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4">
                       <span className="inline-flex rounded border border-border bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">

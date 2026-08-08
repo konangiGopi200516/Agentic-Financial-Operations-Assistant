@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldAlert, Search, Filter, AlertTriangle, ShieldX, MapPin, Smartphone } from 'lucide-react';
+import { ShieldAlert, Search, Filter, AlertTriangle, ShieldX, MapPin, Smartphone, Activity, Bot, User } from 'lucide-react';
 import { apiClient } from '@/api/client';
 
 export function FraudDetection() {
@@ -22,6 +22,17 @@ export function FraudDetection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fraud'] });
       queryClient.invalidateQueries({ queryKey: ['dashboardMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['audit'] });
+    }
+  });
+
+  const ignoreMutation = useMutation({
+    mutationFn: async (case_id: string) => {
+      const { data } = await apiClient.post('/fraud/ignore', { case_id });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fraud'] });
       queryClient.invalidateQueries({ queryKey: ['audit'] });
     }
   });
@@ -125,18 +136,43 @@ export function FraudDetection() {
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button className="rounded-md border border-input bg-background p-1.5 hover:bg-muted text-muted-foreground transition-colors" title="Ignore False Positive">
-                           Ignore
-                        </button>
-                        <button 
-                          onClick={() => freezeMutation.mutate(caseItem.id)}
-                          disabled={freezeMutation.isPending}
-                          className="flex items-center gap-1.5 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 px-3 py-1.5 font-semibold hover:bg-rose-200 dark:hover:bg-rose-500/30 transition-colors disabled:opacity-50"
-                        >
-                           <ShieldX className="h-3.5 w-3.5" /> {freezeMutation.isPending ? 'Freezing...' : 'Freeze'}
-                        </button>
-                      </div>
+                      {caseItem.status === 'pending' ? (
+                        <div className="flex items-center justify-end gap-2">
+                          {caseItem.risk_score < 40 ? (
+                            <button 
+                              onClick={() => ignoreMutation.mutate(caseItem.id)}
+                              disabled={ignoreMutation.isPending}
+                              className="flex items-center gap-1.5 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-3 py-1.5 font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                            >
+                               <Bot className="h-3.5 w-3.5" /> {ignoreMutation.isPending ? 'Ignoring...' : 'Bot: Auto-Ignore'}
+                            </button>
+                          ) : caseItem.risk_score >= 80 ? (
+                            <button 
+                              onClick={() => freezeMutation.mutate(caseItem.id)}
+                              disabled={freezeMutation.isPending}
+                              className="flex items-center gap-1.5 rounded-md bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 px-3 py-1.5 font-semibold hover:bg-rose-200 dark:hover:bg-rose-500/30 transition-colors disabled:opacity-50"
+                            >
+                               <User className="h-3.5 w-3.5" /> {freezeMutation.isPending ? 'Processing...' : 'Manual Process'}
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => freezeMutation.mutate(caseItem.id)}
+                              disabled={freezeMutation.isPending}
+                              className="flex items-center gap-1.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 px-3 py-1.5 font-semibold hover:bg-amber-200 dark:hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+                            >
+                               <Activity className="h-3.5 w-3.5" /> {freezeMutation.isPending ? 'Processing...' : 'Verify Risk'}
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold border ${
+                          caseItem.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                          caseItem.status === 'Blocked' ? 'bg-rose-500/10 text-rose-600 border-rose-500/20' :
+                          'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                        }`}>
+                          {caseItem.status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))

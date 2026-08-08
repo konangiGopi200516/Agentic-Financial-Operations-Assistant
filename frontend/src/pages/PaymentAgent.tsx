@@ -25,8 +25,9 @@ export function PaymentAgent() {
 
   const processRefundMutation = useMutation({
     mutationFn: async () => {
-      const numericId = txnId.replace(/[^0-9]/g, '');
-      const { data } = await apiClient.post('/refund/approve', { transaction_id: numericId || '1' });
+      // Use the actual transaction ID determined by the AI Core during verification
+      const idToRefund = result?.actual_txn_id || txnId.replace(/[^0-9]/g, '');
+      const { data } = await apiClient.post('/refund/approve', { transaction_id: idToRefund });
       return data;
     },
     onSuccess: () => {
@@ -138,20 +139,22 @@ export function PaymentAgent() {
                  onClick={() => setResult(null)}
                  className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
                >
-                 Ignore Recommendation
+                 {result.decision === 'Refund' ? 'Ignore Recommendation' : 'Close Analysis'}
                </button>
-               <button 
-                 onClick={() => processRefundMutation.mutate()}
-                 disabled={processRefundMutation.isPending}
-                 className="flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
-               >
-                 {processRefundMutation.isPending ? (
-                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                 ) : (
-                   <CheckCircle2 className="h-4 w-4" />
-                 )}
-                 {processRefundMutation.isPending ? 'Processing...' : 'Auto-Process Refund'}
-               </button>
+               {result.decision === 'Refund' && (
+                 <button 
+                   onClick={() => processRefundMutation.mutate()}
+                   disabled={processRefundMutation.isPending}
+                   className="flex items-center gap-2 rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                 >
+                   {processRefundMutation.isPending ? (
+                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                   ) : (
+                     <CheckCircle2 className="h-4 w-4" />
+                   )}
+                   {processRefundMutation.isPending ? 'Processing...' : 'Auto-Process Refund'}
+                 </button>
+               )}
              </div>
           </div>
         </div>

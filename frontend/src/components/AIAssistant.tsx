@@ -6,7 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'ai', content: string, action?: any}[]>([
-    { role: 'ai', content: 'Hello! I am your FinPilot AI Assistant.\n\nYou can ask me things like:\n• "Add failed transactions to tickets"\n• "How many pending refunds are there?"\n• "Show me recent fraud alerts"' }
+    { role: 'ai', content: 'Hello! I am your FinPilot AI Assistant.\n\nI am connected directly to the live database and have real-time context on all transactions, tickets, fraud alerts, and customers. \n\nAsk me any question regarding the application or instruct me to take action on your behalf!' }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);

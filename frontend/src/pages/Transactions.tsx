@@ -7,6 +7,8 @@ import { formatCurrency } from '@/lib/currency';
 export function Transactions() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTxn, setNewTxn] = useState({ amount: '', customer_id: 1, payment_method: 'Credit Card', status: 'Success' });
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   const { data: transactions, isLoading } = useQuery({
@@ -15,6 +17,35 @@ export function Transactions() {
       const { data } = await apiClient.get('/transactions');
       return data;
     },
+    refetchInterval: 5000,
+  });
+
+  const filteredTransactions = transactions?.filter((tx: any) => {
+    // 1. Time Filter
+    let timePasses = true;
+    if (timeFilter !== 'all') {
+      const txTime = new Date(tx.created_at + (tx.created_at.includes('Z') ? '' : 'Z')).getTime();
+      const now = new Date().getTime();
+      const diff = now - txTime;
+      
+      if (timeFilter === '1m') timePasses = diff <= 60 * 1000;
+      else if (timeFilter === '1h') timePasses = diff <= 60 * 60 * 1000;
+      else if (timeFilter === '24h') timePasses = diff <= 24 * 60 * 60 * 1000;
+    }
+    
+    // 2. Search Filter
+    let searchPasses = true;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const numOnly = q.replace(/[^0-9]/g, '');
+      searchPasses = 
+        (tx.customer_name && tx.customer_name.toLowerCase().includes(q)) || 
+        (tx.email && tx.email.toLowerCase().includes(q)) || 
+        ('txn-' + tx.id.toString().padStart(5, '0')).includes(q) ||
+        (numOnly.length > 0 && tx.id.toString().includes(numOnly));
+    }
+    
+    return timePasses && searchPasses;
   });
 
   const createTxnMutation = useMutation({
@@ -43,6 +74,7 @@ export function Transactions() {
       case 'failed': return <XCircle className="h-4 w-4 text-rose-500" />;
       case 'pending': return <Clock className="h-4 w-4 text-amber-500" />;
       case 'suspicious': return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+      case 'refunded': return <Clock className="h-4 w-4 text-purple-500" />;
       default: return null;
     }
   };
@@ -53,6 +85,7 @@ export function Transactions() {
       case 'failed': return 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border-rose-200 dark:border-rose-500/30';
       case 'pending': return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border-amber-200 dark:border-amber-500/30';
       case 'suspicious': return 'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 border-orange-200 dark:border-orange-500/30';
+      case 'refunded': return 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border-purple-200 dark:border-purple-500/30';
       default: return 'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400 border-slate-200 dark:border-slate-500/30';
     }
   };
@@ -72,7 +105,7 @@ export function Transactions() {
       tx.payment_method,
       tx.status,
       tx.refund_status,
-      new Date(tx.created_at).toLocaleString()
+      new Date(tx.created_at + (tx.created_at.includes('Z') ? '' : 'Z')).toLocaleString()
     ]);
 
     // Combine headers and rows
@@ -118,13 +151,27 @@ export function Transactions() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by ID or customer..."
               className="h-9 w-[300px] rounded-md border border-input bg-background pl-9 pr-4 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
-          <button className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted">
-            <Filter className="h-4 w-4" /> Filters
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            >
+              <option value="all">All Time</option>
+              <option value="1m">Last 1 Minute</option>
+              <option value="1h">Last 1 Hour</option>
+              <option value="24h">Last 24 Hours</option>
+            </select>
+            <button className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium shadow-sm hover:bg-muted">
+              <Filter className="h-4 w-4" /> Filters
+            </button>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
@@ -150,10 +197,10 @@ export function Transactions() {
                     </div>
                   </td>
                 </tr>
-              ) : transactions?.length === 0 ? (
-                <tr><td colSpan={7} className="p-8 text-center">No transactions found</td></tr>
+              ) : filteredTransactions?.length === 0 ? (
+                <tr><td colSpan={7} className="p-8 text-center">No transactions found for this time period</td></tr>
               ) : (
-                transactions?.map((tx: any) => (
+                filteredTransactions?.map((tx: any) => (
                   <tr key={tx.id} className="hover:bg-muted/50 transition-colors">
                     <td className="whitespace-nowrap px-6 py-4 font-medium text-foreground">TXN-{tx.id.toString().padStart(5, '0')}</td>
                     <td className="whitespace-nowrap px-6 py-4">
@@ -183,7 +230,9 @@ export function Transactions() {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4">{new Date(tx.created_at).toLocaleString()}</td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      {new Date(tx.created_at + (tx.created_at.includes('Z') ? '' : 'Z')).toLocaleString()}
+                    </td>
                   </tr>
                 ))
               )}

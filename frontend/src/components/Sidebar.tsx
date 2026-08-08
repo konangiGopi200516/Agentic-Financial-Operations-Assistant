@@ -22,7 +22,6 @@ const navItems = [
   { name: 'Tickets', path: '/tickets', icon: Ticket },
   { name: 'Payment Agent', path: '/payment-agent', icon: Bot },
   { name: 'Fraud Detection', path: '/fraud', icon: ShieldAlert },
-  { name: 'Human Approval', path: '/approvals', icon: CheckSquare },
   { name: 'Audit Logs', path: '/audit', icon: FileText },
   { name: 'AI Agents', path: '/agents', icon: Bot },
 ];
